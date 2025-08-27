@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User CRUD</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f4f4f4; }
+    button { margin: 2px; }
+  </style>
+</head>
+<body>
+  <h1>User CRUD</h1>
+
+  <form id="userForm">
+    <input type="hidden" id="userId">
+    <input type="text" id="name" placeholder="Name" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="number" id="age" placeholder="Age">
+    <button type="submit">Save</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Email</th><th>Age</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="userTable"></tbody>
+  </table>
+
+  <script>
+    const apiUrl = '/users';
+    const form = document.getElementById('userForm');
+    const userTable = document.getElementById('userTable');
+
+    async function fetchUsers() {
+      const res = await fetch(apiUrl);
+      const users = await res.json();
+      userTable.innerHTML = users.map(u => `
+        <tr>Q
+          <td>${u.name}</td>
+          <td>${u.email}</td>
+          <td>${u.age || ''}</td>
+          <td>
+            <button onclick="editUser('${u._id}', '${u.name}', '${u.email}', ${u.age || 0})">Edit</button>
+            <button onclick="deleteUser('${u._id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function deleteUser(id) {
+      await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+      fetchUsers();
+    }
+
+    function editUser(id, name, email, age) {
+      document.getElementById('userId').value = id;
+      document.getElementById('name').value = name;
+      document.getElementById('email').value = email;
+      document.getElementById('age').value = age;
+    }
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const id = document.getElementById('userId').value;
+      const user = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        age: document.getElementById('age').value
+      };
+
+      if (id) {
+        await fetch(`${apiUrl}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(user) });
+      } else {
+        await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(user) });
+      }
+
+      form.reset();
+      fetchUsers();
+    });
+
+    fetchUsers();
+  </script>
+</body>
+</html>
