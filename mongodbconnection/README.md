@@ -2,7 +2,7 @@
 
 A well-structured Node.js API with MongoDB connection and CRUD operations, following best practices and modern architecture patterns.
 
-## 🏗️ Project Structure
+## 🏗️ Project Structure🏗️🏗️🏗️🏗️🏗️🏗️🏗️🏗️🏗️
 
 ```
 mongodbconnection/
@@ -25,7 +25,7 @@ mongodbconnection/
 └── README.md
 ```
 
-## 🚀 Features
+##  Features
 
 - **Clean Architecture**: Separation of concerns with MVC pattern
 - **Error Handling**: Comprehensive error handling middleware
@@ -35,13 +35,13 @@ mongodbconnection/
 - **Logging**: Request logging and error tracking
 - **Graceful Shutdown**: Proper server shutdown handling
 
-## 📋 Prerequisites
+##  Prerequisites
 
 - Node.js (>=14.0.0)
 - MongoDB database
 - npm or yarn
 
-## 🛠️ Installation
+##  Installation
 
 1. Clone the repository
 2. Install dependencies:
@@ -67,7 +67,7 @@ mongodbconnection/
    npm start
    ```
 
-## 📚 API Endpoints
+##  API Endpoints
 
 ### Users
 
@@ -86,7 +86,7 @@ mongodbconnection/
 |--------|----------|-------------|
 | GET | `/health` | Server health status |
 
-## 🔧 Environment Variables
+##  Environment Variables
 
 - `PORT`: Server port (default: 3000)
 - `NODE_ENV`: Environment mode (development/production)
@@ -94,7 +94,7 @@ mongodbconnection/
 - `JWT_SECRET`: JWT secret key
 - `CORS_ORIGIN`: Allowed CORS origin
 
-## 📝 User Schema
+##  User Schema
 
 ```javascript
 {
@@ -106,7 +106,7 @@ mongodbconnection/
 }
 ```
 
-## 🧪 Testing
+##  Testing
 
 ```bash
 # Run tests
@@ -119,7 +119,7 @@ npm run lint
 npm run lint:fix
 ```
 
-## 🚀 Deployment
+##  Deployment
 
 1. Set `NODE_ENV=production`
 2. Configure production MongoDB URI

@@ -15,7 +15,7 @@ const getUsers = asyncHandler(async (req, res) => {
 });
 
 // @desc    Get single user
-// @route   GET /api/users/:id
+// @route   GET /api/users/:id 
 // @access  Public
 const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id).select('-__v');

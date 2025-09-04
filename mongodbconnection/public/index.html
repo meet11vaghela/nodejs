@@ -28,60 +28,72 @@
     </thead>
     <tbody id="userTable"></tbody>
   </table>
-
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script>
-    const apiUrl = '/users';
-    const form = document.getElementById('userForm');
-    const userTable = document.getElementById('userTable');
+    const apiBase = '/api/users';
 
-    async function fetchUsers() {
-      const res = await fetch(apiUrl);
-      const users = await res.json();
-      userTable.innerHTML = users.map(u => `
-        <tr>Q
-          <td>${u.name}</td>
-          <td>${u.email}</td>
-          <td>${u.age || ''}</td>
-          <td>
-            <button onclick="editUser('${u._id}', '${u.name}', '${u.email}', ${u.age || 0})">Edit</button>
-            <button onclick="deleteUser('${u._id}')">Delete</button>
-          </td>
-        </tr>
-      `).join('');
+    function renderUsers(users) {
+      const rows = users.map(function(u) {
+        const safeName = String(u.name || '').replace(/"/g, '&quot;');
+        const safeEmail = String(u.email || '').replace(/"/g, '&quot;');
+        const age = (u.age === undefined || u.age === null) ? '' : u.age;
+        return (
+          `\n        <tr>\n          <td>${safeName}</td>\n          <td>${safeEmail}</td>\n          <td>${age}</td>\n          <td>\n            <button onclick="editUser('${u._id}','${safeName}','${safeEmail}','${age}')">Edit</button>\n            <button onclick="deleteUser('${u._id}')">Delete</button>\n          </td>\n        </tr>`
+        );
+      }).join('');
+      document.getElementById('userTable').innerHTML = rows;
     }
 
-    async function deleteUser(id) {
-      await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
-      fetchUsers();
+    function fetchUsers() {
+      $.getJSON(apiBase)
+        .done(function(res) {
+          console.log('Fetched users', res);
+          const users = Array.isArray(res) ? res : (res && res.data) ? res.data : [];
+          renderUsers(users);
+        })
+        .fail(function(err) {
+          console.error('Failed to fetch users', err);
+          renderUsers([]);
+        });
     }
 
-    function editUser(id, name, email, age) {
-      document.getElementById('userId').value = id;
-      document.getElementById('name').value = name;
-      document.getElementById('email').value = email;
-      document.getElementById('age').value = age;
-    }
+    window.deleteUser = function(id) {
+      $.ajax({ url: apiBase + '/' + id, type: 'DELETE' })
+        .always(fetchUsers);
+    };
 
-    form.addEventListener('submit', async e => {
+    window.editUser = function(id, name, email, age) {
+      $('#userId').val(id);
+      $('#name').val(name);
+      $('#email').val(email);
+      $('#age').val(age);
+    };
+
+    $('#userForm').on('submit', function(e) {
       e.preventDefault();
-      const id = document.getElementById('userId').value;
+      const id = $('#userId').val();
       const user = {
-        name: document.getElementById('name').value,
-        email: document.getElementById('email').value,
-        age: document.getElementById('age').value
+        name: $('#name').val(),
+        email: $('#email').val(),
+        age: $('#age').val() ? Number($('#age').val()) : undefined
       };
 
-      if (id) {
-        await fetch(`${apiUrl}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(user) });
-      } else {
-        await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(user) });
-      }
+      const options = {
+        url: id ? (apiBase + '/' + id) : apiBase,
+        type: id ? 'PUT' : 'POST',
+        data: JSON.stringify(user),
+        contentType: 'application/json'
+      };
 
-      form.reset();
-      fetchUsers();
+      $.ajax(options)
+        .always(function() {
+          (document.getElementById('userForm')).reset();
+          $('#userId').val('');
+          fetchUsers();
+        });
     });
 
-    fetchUsers();
+    $(fetchUsers);
   </script>
 </body>
 </html>
