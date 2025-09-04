@@ -9,17 +9,18 @@ const {
 } = require('../controllers/userController');
 
 const router = express.Router();
+const { protect } = require('../middleware/auth');
 
 // Base route
-router.get('/', getUsers);
-router.post('/', createUser);
+router.get('/', protect, getUsers);
+router.post('/', protect, createUser);
 
 // Search route
-router.get('/search', searchUsers);
+router.get('/search', protect, searchUsers);
 
 // Routes with ID parameter
-router.get('/:id', getUser);
-router.put('/:id', updateUser);
-router.delete('/:id', deleteUser);
+router.get('/:id', protect, getUser);
+router.put('/:id', protect, updateUser);
+router.delete('/:id', protect, deleteUser);
 
 module.exports = router; 

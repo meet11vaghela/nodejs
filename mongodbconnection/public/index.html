@@ -12,9 +12,37 @@
   </style>
 </head>
 <body>
-  <h1>User CRUD</h1>
+  <h1>User CRUD (JWT Protected)</h1>
 
-  <form id="userForm">
+  <section id="authSection">
+    <h2>Authentication</h2>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;">
+      <form id="registerForm">
+        <h3>Register</h3>
+        <input type="text" id="reg_name" placeholder="Name" required>
+        <input type="email" id="reg_email" placeholder="Email" required>
+        <input type="password" id="reg_password" placeholder="Password" required>
+        <input type="number" id="reg_age" placeholder="Age">
+        <button type="submit">Register</button>
+      </form>
+
+      <form id="loginForm">
+        <h3>Login</h3>
+        <input type="email" id="login_email" placeholder="Email" required>
+        <input type="password" id="login_password" placeholder="Password" required>
+        <button type="submit">Login</button>
+      </form>
+
+      <div>
+        <h3>Session</h3>
+        <div id="me"></div>
+        <button id="logoutBtn" type="button">Logout</button>
+      </div>
+    </div>
+    <div id="authMsg" style="margin-top:8px;color:#666;"></div>
+  </section>
+
+  <form id="userForm" style="display:none;">
     <input type="hidden" id="userId">
     <input type="text" id="name" placeholder="Name" required>
     <input type="email" id="email" placeholder="Email" required>
@@ -22,7 +50,7 @@
     <button type="submit">Save</button>
   </form>
 
-  <table>
+  <table id="userTableWrap" style="display:none;">
     <thead>
       <tr><th>Name</th><th>Email</th><th>Age</th><th>Actions</th></tr>
     </thead>
@@ -31,6 +59,21 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script>
     const apiBase = '/api/users';
+    const authBase = '/api/auth';
+
+    function getToken() { return localStorage.getItem('token') || ''; }
+    function setToken(t) { if (t) { localStorage.setItem('token', t); } }
+    function clearToken() { localStorage.removeItem('token'); }
+
+    function authHeaders() {
+      const t = getToken();
+      return t ? { 'Authorization': 'Bearer ' + t } : {};
+    }
+
+    function setAuthedUI(isAuthed) {
+      document.getElementById('userForm').style.display = isAuthed ? '' : 'none';
+      document.getElementById('userTableWrap').style.display = isAuthed ? '' : 'none';
+    }
 
     function renderUsers(users) {
       const rows = users.map(function(u) {
@@ -45,20 +88,23 @@
     }
 
     function fetchUsers() {
-      $.getJSON(apiBase)
+      $.ajax({ url: apiBase, headers: authHeaders() })
         .done(function(res) {
-          console.log('Fetched users', res);
           const users = Array.isArray(res) ? res : (res && res.data) ? res.data : [];
           renderUsers(users);
         })
         .fail(function(err) {
-          console.error('Failed to fetch users', err);
+          const status = err && err.status;
+          if (status === 401) {
+            $('#authMsg').text('Please login to view users.');
+            setAuthedUI(false);
+          }
           renderUsers([]);
         });
     }
 
     window.deleteUser = function(id) {
-      $.ajax({ url: apiBase + '/' + id, type: 'DELETE' })
+      $.ajax({ url: apiBase + '/' + id, type: 'DELETE', headers: authHeaders() })
         .always(fetchUsers);
     };
 
@@ -82,7 +128,8 @@
         url: id ? (apiBase + '/' + id) : apiBase,
         type: id ? 'PUT' : 'POST',
         data: JSON.stringify(user),
-        contentType: 'application/json'
+        contentType: 'application/json',
+        headers: authHeaders()
       };
 
       $.ajax(options)
@@ -93,7 +140,85 @@
         });
     });
 
-    $(fetchUsers);
+    // Register
+    $('#registerForm').on('submit', function(e) {
+      e.preventDefault();
+      const payload = {
+        name: $('#reg_name').val(),
+        email: $('#reg_email').val(),
+        password: $('#reg_password').val(),
+        age: $('#reg_age').val() ? Number($('#reg_age').val()) : undefined
+      };
+      $.ajax({ url: authBase + '/register', type: 'POST', data: JSON.stringify(payload), contentType: 'application/json' })
+        .done(function(res) {
+          const token = res && res.token;
+          if (token) {
+            setToken(token);
+            $('#authMsg').text('Registered and logged in.');
+            setAuthedUI(true);
+            refreshMe();
+            fetchUsers();
+          }
+        })
+        .fail(function(err) {
+          $('#authMsg').text('Registration failed.');
+        });
+    });
+
+    // Login
+    $('#loginForm').on('submit', function(e) {
+      e.preventDefault();
+      const payload = {
+        email: $('#login_email').val(),
+        password: $('#login_password').val()
+      };
+      $.ajax({ url: authBase + '/login', type: 'POST', data: JSON.stringify(payload), contentType: 'application/json' })
+        .done(function(res) {
+          const token = res && res.token;
+          if (token) {
+            setToken(token);
+            $('#authMsg').text('Logged in.');
+            setAuthedUI(true);
+            refreshMe();
+            fetchUsers();
+          }
+        })
+        .fail(function(err) {
+          $('#authMsg').text('Login failed.');
+        });
+    });
+
+    // Logout
+    $('#logoutBtn').on('click', function() {
+      clearToken();
+      $('#me').text('');
+      $('#authMsg').text('Logged out.');
+      setAuthedUI(false);
+      renderUsers([]);
+    });
+
+    function refreshMe() {
+      const headers = authHeaders();
+      if (!headers.Authorization) { $('#me').text(''); return; }
+      $.ajax({ url: authBase + '/me', headers })
+        .done(function(res) {
+          const user = (res && res.data) ? res.data : null;
+          $('#me').text(user ? ('Logged in as: ' + user.name + ' (' + user.email + ')') : '');
+        })
+        .fail(function() { $('#me').text(''); });
+    }
+
+    // Init
+    (function init() {
+      const isAuthed = !!getToken();
+      setAuthedUI(isAuthed);
+      if (isAuthed) {
+        refreshMe();
+        fetchUsers();
+      } else {
+        $('#authMsg').text('Please login to manage users.');
+      }
+    })();
   </script>
 </body>
 </html>
